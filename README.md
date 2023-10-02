@@ -57,12 +57,15 @@ Official Game Website: [Insert official game website link]
 Six Making, the game state is represented using a list of lists to represent the board. Different atoms represent various pieces. Here are examples of Prolog representations for initial, intermediate, and final game states, along with explanations of each atom's meaning.
 
 Initial Game State:
+
 % Add Prolog representation of the initial game state here
 
 Intermediate Game State:
+
 % Add Prolog representation of an intermediate game state here
 
 Final Game State:
+
 % Add Prolog representation of the final game state here
 
 **Game State Visualization**
