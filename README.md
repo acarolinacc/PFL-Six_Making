@@ -1,6 +1,6 @@
 # PFL TP1: Six Apart
-- Ana Carolina da Costa Coutinho (up202108685)
-- TomÃ¡s Pacheco Pires 	(up202008319)
+- Ana Carolina da Costa Coutinho 	(up202108685)
+- Tomás Pacheco Pires 	(up202008319)
 
 ## Installation and Execution
 
