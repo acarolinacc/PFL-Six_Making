@@ -1,51 +1,43 @@
 initialBoard([
-[empty,empty,empty,empty,empty,empty,empty,empty,empty,empty,empty],
-[empty,empty,empty,empty,empty,empty,empty,empty,empty,empty,empty],
-[empty,empty,empty,empty,empty,empty,empty,empty,empty,empty,empty],
-[empty,empty,empty,empty,empty,empty,empty,empty,empty,empty,empty],
-[empty,empty,empty,empty,empty,empty,empty,empty,empty,empty,empty],
-[empty,empty,empty,empty,empty,empty,empty,empty,empty,empty,empty],
-[empty,empty,empty,empty,empty,empty,empty,empty,empty,empty,empty],
-[empty,empty,empty,empty,empty,empty,empty,empty,empty,empty,empty],
-[empty,empty,empty,empty,empty,empty,empty,empty,empty,empty,empty],
-[empty,empty,empty,empty,empty,empty,empty,empty,empty,empty,empty],
-[empty,empty,empty,empty,empty,empty,empty,empty,empty,empty,empty]
+    [empty, empty, empty, empty, empty],
+    [empty, empty, empty, empty, empty],
+    [empty, empty, empty, empty, empty],
+    [empty, empty, empty, empty, empty],
+    [empty, empty, empty, empty, empty]
 ]).
 
-symbol(empty,S) :- S=' '.
-symbol(black,S) :- S='X'.
-symbol(white,S) :- S='O'.
-symbol(red,S) :- S='*'.
+% Define the symbols for each player.
+symbol(empty, ' ').
+symbol(black, 'X').
+symbol(white, 'O').
 
-letter(1, L) :- L='A'.
-letter(2, L) :- L='B'.
-letter(3, L) :- L='C'.
-letter(4, L) :- L='D'.
-letter(5, L) :- L='E'.
+% Define a predicate to convert row numbers to letters.
+letter(1, '1').
+letter(2, '2').
+letter(3, '3').
+letter(4, '4').
+letter(5, '5').
 
-
-printBoard(X) :-
+% Print the game board.
+printBoard(Board) :-
     nl,
     write('   | 1 | 2 | 3 | 4 | 5 |\n'),
     write('---|---|---|---|---|---|\n'),
-    printMatrix(X, 1).
+    printMatrix(Board, 1).
 
+% Print the matrix, including row numbers.
 printMatrix([], 6).
-
-printMatrix([Head|Tail], N) :-
+printMatrix([Row|Rest], N) :-
     letter(N, L),
-    write(' '),
-    write(L),
+    format(' ~w | ', [L]),
+    printRow(Row),
+    write('\n---|---|---|---|---|---|\n'),
     N1 is N + 1,
-    write(' | '),
-    printLine(Head),
-    write('\n---|---|---|---|---|---|---|---|---|---|---|---|\n'),
-    printMatrix(Tail, N1).
+    printMatrix(Rest, N1).
 
-printLine([]).
-
-printLine([Head|Tail]) :-
-    symbol(Head, S),
-    write(S),
-    write(' | '),
-    printLine(Tail).
+% Print a single row.
+printRow([]).
+printRow([Cell|Rest]) :-
+    symbol(Cell, S),
+    format('~w | ', [S]),
+    printRow(Rest).
