@@ -1,18 +1,19 @@
-:- dynamic board/1.
-:- dynamic previousBoard/1.
+:- dynamic board/1.          % Declara a estrutura dinâmica board/1.
+:- dynamic previousBoard/1.  % Declara a estrutura dinâmica previousBoard/1.
+:- consult('utils.pl').
 
 % Inicializa o tabuleiro no início do jogo.
 initBoard :-
-    initialBoard(InitialBoard),
-    assertz(board(InitialBoard)),
-    assertz(previousBoard(InitialBoard)).
+    initialBoard(InitialBoard),  % Obtém um tabuleiro inicial.
+    assertz(board(InitialBoard)),  % Adiciona o tabuleiro como um facto dinâmico.
+    assertz(previousBoard(InitialBoard)).  % Adiciona o tabuleiro anterior como um facto dinâmico.
 
 % Atualiza o tabuleiro atual e o tabuleiro anterior.
 updateBoard(NewBoard) :-
-    retract(board(_)),
-    assertz(board(NewBoard)),
-    retract(previousBoard(_)),
-    assertz(previousBoard(NewBoard)).
+    retract(board(_)),            % Retira o tabuleiro atual.
+    assertz(board(NewBoard)),     % Adiciona o novo tabuleiro como um facto dinâmico.
+    retract(previousBoard(_)),    % Retira o tabuleiro anterior.
+    assertz(previousBoard(NewBoard)).  % Adiciona o novo tabuleiro como um facto dinâmico.
 
 % Use o tabuleiro atual no início de cada jogada.
 getCurrentBoard(CurrentBoard) :-
@@ -20,72 +21,17 @@ getCurrentBoard(CurrentBoard) :-
 
 % Verifica o estado atual do jogo após cada jogada.
 checkGameState(Player, Board) :-
-    (
-        (checkFullBoard(Board), write('Woops, no more space left! It is a draw!'));
-        (checkValidSpots(Board, 0, 0, Result), Result =:= 0, write('Woops, no more space left! It is a draw!'))
+    (checkFullBoard(Board) -> drawMessage  % Verifica se o tabuleiro está cheio.
     ).
 
+drawMessage :-
+    write('Woops, no more space left! It is a draw!').  % Mensagem de empate.
 
-% Loop do jogo, em que recebe a jogada de cada jogador e verifica o estado do jogo a seguir.
-gameLoop(Board, Player1, Player2) :-
-    getCurrentBoard(CurrentBoard),
-    (
-        Player1 == 'P' -> 
-            (
-                % Use o tabuleiro atual
-                blackPlayerTurn(CurrentBoard, NewBoard, Player1),
-                updateBoard(NewBoard)
-            );
-        Player1 == 'C' -> 
-            (
-                % Use o tabuleiro atual
-                blackPlayerTurn(CurrentBoard, NewBoard, Player1),
-                updateBoard(NewBoard)
-            )
-    ),
-    (
-        (checkGameState('black', NewBoard), write('\nThanks for playing!\n'));
-        (
-            Player2 == 'P' -> 
-                (
-                    % Use o tabuleiro atual
-                    whitePlayerTurn(NewBoard, FinalBoard, Player2),
-                    updateBoard(FinalBoard)
-                );
-            Player2 == 'C' -> 
-                (
-                    % Use o tabuleiro atual
-                    whitePlayerTurn(NewBoard, FinalBoard, Player2),
-                    updateBoard(FinalBoard)
-                )
-        ),
-        (
-            (checkGameState('white', FinalBoard), write('\nThanks for playing!\n'));
-            gameLoop(FinalBoard, Player1, Player2)
-        )
-    ).
-
-
-checkValidSpots(Board, Row, Column, Result) :-
-      (
-            (Column =:= 11, Row1 is Row + 1, checkValidSpots(Board, Row1, 0, Result));
-            (Row =:= 11, Result is 0);
-            ((isValidPosLines(Board, Row, Column, Res)), 
-                  ((Res =:= 0, Column1 is Column + 1, checkValidSpots(Board, Row, Column1, Result));
-                  (Res =:=1 , Result is 1)))
-      ), !.
-
-isValidPosLines(Board, Row, Column, Res) :-
-    isEmptyCell(Board, Row, Column, Res).
-
-isEmptyCell(Board, Row, Column, Res) :-
-    ((getValueFromMatrix(Board, Row, Column, Value), Value == empty, !, Res is 1);
-    Res is 0).
-
+% Verifica a validade de uma jogada.
 checkMove(Board, Player, NewBoard, Expected, ColumnIndex, RowIndex) :-
     (
         % Verifica se o jogador tenta mover um trabalhador vazio para uma célula com uma peça esperada (black ou white).
-        (Player == empty, member(Expected, [black, white]),
+        (Player = [empty], member(Expected, [[black], [white]]),
             (
                 getValueFromMatrix(Board, RowIndex, ColumnIndex, Expected),
                 replaceInMatrix(Board, RowIndex, ColumnIndex, Player, NewBoard)
@@ -96,15 +42,18 @@ checkMove(Board, Player, NewBoard, Expected, ColumnIndex, RowIndex) :-
         )
         ;
 
-        % Verifica se o jogador tenta mover uma peça (black ou white) para uma célula vazia (empty).
-        ((Player == black; Player == white), Expected == empty,
+        % Verifica se o jogador tenta mover uma peça (black ou white) para qualquer célula.
+        ((Player = [black]; Player = [white]),
             (
-                getValueFromMatrix(Board, RowIndex, ColumnIndex, Expected),
+                % Verifica se a célula de destino (determinada por RowIndex e ColumnIndex) está vazia (empty) ou contém uma peça do jogador ou é de outra cor.
+                (getValueFromMatrix(Board, RowIndex, ColumnIndex, DestinationValue),
+                (DestinationValue = []),
                 replaceInMatrix(Board, RowIndex, ColumnIndex, Player, NewBoard)
                 ;
-                write('INVALID MOVE: That cell is not empty, please try again!\n\n'),
+                write('INVALID MOVE: This move is not allowed, please try again!\n\n'),
                 askCoords(Board, Player, NewBoard, Expected)
             )
+        )
         )
         ;
 
@@ -116,118 +65,248 @@ checkMove(Board, Player, NewBoard, Expected, ColumnIndex, RowIndex) :-
     ).
 
 
-/*Predicado que pede e analisa cada jogada.*/
+
+
+% Pede as coordenadas de uma jogada.
 askCoords(Board, Player, NewBoard, Expected) :-
-    manageRow(NewRow),
-    manageColumn(NewColumn),
+    manageRow(NewRow),  % Obtém a linha escolhida pelo jogador.
+    manageColumn(NewColumn),  % Obtém a coluna escolhida pelo jogador.
     write('\n'),
-    ColumnIndex is NewColumn - 1,
-    RowIndex is NewRow - 1,
+    ColumnIndex is NewColumn - 1,  % Converte o número da coluna para o índice da matriz.
+    RowIndex is NewRow - 1,  % Converte o número da linha para o índice da matriz.
     checkMove(Board, Player, NewBoard, Expected, ColumnIndex, RowIndex).
 
-moveWorkerBlack(Board, 0, NewBoard) :-
-      % Obtenha o tabuleiro anterior
-      previousBoard(PreviousBoard),
-      % Use o tabuleiro anterior
-      NewBoard = PreviousBoard,
-      write('\n1. Choose pawn cell.\n'),
-      askCoords(Board, black, Worker1Board, empty),
-      printBoard(Worker1Board).
 
-
-moveWorkerBlack(Board, 1, NewBoard) :-
-        write('\n2. Choose tower current cell.\n'),
-        askCoords(Board, empty, NoWorkerBoard, black),
-        write('3. Choose tower new cell.\n'),
-        askCoords(NoWorkerBoard, black, NewBoard, empty),
-        printBoard(NewBoard).
-
-moveWorkerWhite(Board, 0, NewBoard) :-
-    % Obtenha o tabuleiro anterior
-    previousBoard(PreviousBoard),
-    % Use o tabuleiro anterior
-    NewBoard = PreviousBoard,
-    write('\n1. Choose pawn cell.\n'),
-    askCoords(Board, white, Worker1Board, empty),
-    printBoard(Worker1Board).
-
-        
-moveWorkerWhite(Board, 1, NewBoard) :-
-        write('\n2. Choose tower current cell.\n'),
-        askCoords(Board, empty, NoWorkerBoard, white),
-        write('3. Choose tower new cell.\n'),
-        askCoords(NoWorkerBoard, white, NewBoard, empty),
-        printBoard(NewBoard).
-
-addWorkers(InitialBoard, WorkersBoard, 'P', 'P') :-
-      printBoard(InitialBoard),
+% Adiciona trabalhadores ao tabuleiro.
+addPieces(InitialBoard, PiecesBoard, 'P', 'P') :-
+      printBoard(InitialBoard),  % Imprime o tabuleiro inicial.
       write('\n------------------ PLAYER X -------------------\n\n'),
       write('1. Choose pawn cell.\n'),
-      askCoords(InitialBoard, black, Worker1Board, empty),
-      printBoard(Worker1Board),
+      askCoords(InitialBoard, [black], Worker1Board, empty),
+      printBoard(Worker1Board),  % Imprime o tabuleiro após o jogador X escolher uma célula.
       write('\n------------------ PLAYER O -------------------\n\n'),
       write('1. Choose pawn cell.\n'),
-      askCoords(Worker1Board, white, WorkersBoard, empty),
-      printBoard(WorkersBoard).
+      askCoords(Worker1Board, [white], PiecesBoard, empty),
+      printBoard(PiecesBoard).  % Imprime o tabuleiro após o jogador O escolher uma célula.
 
+% Funções para a vez do jogador preto e branco.
 blackPlayerTurn(Board, NewBoard, 'P') :-
-    write('\n------------------ PLAYER X -------------------\n\n'),
-    write('1. Do you want to move a worker or add a piece? [0(No)/1(Yes)]'),
-    manageMoveWorkerBool(MoveWorkerBoolX),
-    (
-        MoveWorkerBoolX =:= 1,
-        moveWorkerBlack(Board, MoveWorkerBoolX, Board1),
-        (
-            checkGameState('black', Board1),
-            NewBoard = Board1
-            ;
-            whitePlayerTurn(Board1, NewBoard, 'P')
-        )
-        ;
-        MoveWorkerBoolX =:= 0,
-        % Continue without moving a worker and allow the player to add a new piece
-        write('2. Choose a cell to add a new piece.\n'),
-        askCoords(Board, black, TempBoard, empty),
-        printBoard(TempBoard), % Adicione esta linha para imprimir o tabuleiro atual
-        gameLoop(TempBoard, 'P', 'P') % Altere 'C' para 'P' para continuar com o mesmo jogador
-    ).
+    playerTurn(Board, NewBoard, 'black', 'PLAYER X').
+
+blackPlayerTurn(Board, NewBoard, 'C') :-
+    playerTurn(Board, NewBoard, 'black', 'COMPUTER X').
 
 whitePlayerTurn(Board, NewBoard, 'P') :-
-    write('\n------------------ PLAYER O -------------------\n\n'),
-    write('1. Do you want to move a worker or add a piece? [0(No)/1(Yes)]'),
-    manageMoveWorkerBool(MoveWorkerBoolO),
-    (
-        MoveWorkerBoolO =:= 1,
-        moveWorkerWhite(Board, MoveWorkerBoolO, Board1),
-        (
-            checkGameState('white', Board1),
-            NewBoard = Board1
-            ;
-            blackPlayerTurn(Board1, NewBoard, 'P')
-        )
+    playerTurn(Board, NewBoard, 'white', 'PLAYER O').
+
+whitePlayerTurn(Board, NewBoard, 'C') :-
+    playerTurn(Board, NewBoard, 'white', 'COMPUTER O').
+
+% Função principal para a vez de um jogador.
+% Predicado para adicionar uma nova peça (Place a new disk)
+addNewDisk(Board, NewBoard, PlayerColor) :-
+    write('Choose a cell to add a new piece.\n'),
+    askCoords(Board, [PlayerColor], NewBoard, empty).
+
+% Função para mover uma torre
+moveTower(Board, NewBoard, PlayerColor) :-
+    write('Choose any tower to move.\n'),
+    manageRow(Row),  % Obtém a linha escolhida pelo jogador.
+    manageColumn(Column),  % Obtém a coluna escolhida pelo jogador.
+    write('\n'),
+    % Obtenha o índice da linha e da coluna
+    ColumnIndex is Column - 1,
+    RowIndex is Row - 1,
+
+    % Acesse o elemento da matriz usando nth0/4
+    nth0(RowIndex, Board, RowList),
+    nth0(ColumnIndex, RowList, Piece),
+
+    % Verifique se a torre não está vazia
+    (is_valid_tower(Piece) ->
+        % Verifique se a torre tem a cor certa
+        (hasCorrectColor(Piece, PlayerColor) ->
+            write('Choose the destination cell for the tower (must not be empty and must be of your color).\n'),
+            manageRow(NewRow),       % Obtenha a linha escolhida pelo jogador
+            manageColumn(NewColumn),  % Obtenha a coluna escolhida pelo jogador
+            write('\n'),
+            % Obtenha o índice da linha e da coluna da célula de destino
+            ColumnInd is NewColumn - 1,
+            RowInd is NewRow - 1,
+
+            % Acesse o elemento da matriz usando nth0/4 para a célula de destino
+            nth0(RowInd, Board, NewRowList),
+            nth0(ColumnInd, NewRowList, SelectedTower),
+
+            length(Piece, Size),
+            % Valide o movimento
+            (valid_moves(RowIndex, ColumnIndex, RowInd, ColumnInd, Size) ->
+                append(Piece, SelectedTower, NewTower),
+
+                % Substitua a torre original na posição inicial pelo NewTower
+                replaceInMatrix(Board, RowIndex, ColumnIndex, [], TempBoard),
+
+                % Substitua a torre de destino pela lista vazia na matriz TempBoard
+                replaceInMatrix(TempBoard, RowInd, ColumnInd, NewTower, NewBoard),
+
+                % Verifique a condição de vitória
+                (winning_condition(PlayerColor, NewTower) ->
+                    true  % Vitória alcançada, o jogo termina
+                ;
+                    % Vitória não alcançada, continue o jogo
+                    write('Valid move. Continue playing.\n')
+                )
+            ; 
+                write('Invalid move for tower size. Please try again.'), nl,
+                % Recursão para tentar novamente
+                playerTurn(Board, NewBoard, PlayerColor, PlayerName)
+            )
         ;
-        MoveWorkerBoolO =:= 0,
-        % Continue without moving a worker and allow the player to add a new piece
-        write('2. Choose a cell to add a new piece.\n'),
-        askCoords(Board, white, TempBoard, empty),
-        printBoard(TempBoard), % Adicione esta linha para imprimir o tabuleiro atual
-        gameLoop(TempBoard, 'P', 'P') % Adicione esta linha para alternar automaticamente para o próximo jogador
+            write('Invalid tower color. Please try again.'), nl,
+            % Recursão para tentar novamente
+            playerTurn(Board, NewBoard, PlayerColor, PlayerName)
+        )
+    ;
+        write('The chosen cell does not contain a valid tower. Please try again.'), nl,
+        % Recursão para tentar novamente
+        playerTurn(Board, NewBoard, PlayerColor, PlayerName)
     ).
 
 
+
+removeAndMovePieces(Board, NewBoard, PlayerColor) :-
+    write('Choose a tower cell to remove pieces from.\n'),
+    readRow(Row),  % Obtenha a linha escolhida pelo jogador.
+    readColumn(Column),  % Obtenha a coluna escolhida pelo jogador.
+    
+    % Obtenha o índice da linha e da coluna
+    RowIndex is Row - 1,
+    ColumnIndex is Column - 1,
+
+    % Verifique se a linha e a coluna escolhidas estão dentro dos limites válidos
+    (
+        is_valid_index(Board, RowIndex, ColumnIndex, PlayerColor),
+        nth0(RowIndex, Board, RowList),
+        nth0(ColumnIndex, RowList, Piece),
+        
+        % Verifique se a torre não está vazia
+        is_valid_tower(Piece),
+        
+        % Verifique se a torre tem a cor certa
+        hasCorrectColor(Piece, PlayerColor),
+
+        length(Piece, Size),
+        write('How many pieces do you want to remove? (Enter a number): '),
+        read(NumPieces),
+
+        (NumPieces >= 0, NumPieces =< Size ->
+            % O jogador escolheu a quantidade correta de peças para remover.
+            write('You selected to remove '), write(NumPieces), write(' pieces.'), nl,
+
+            write('Choose the destination cell for the tower (must not be empty and must be of your color).\n'),
+            readRow(NewRow),  % Obtenha a linha escolhida pelo jogador.
+            readColumn(NewColumn),  % Obtenha a coluna escolhida pelo jogador.
+
+            % Obtenha o índice da nova linha e da nova coluna
+            NewRowIndex is NewRow - 1,
+            NewColumnIndex is NewColumn - 1,
+
+            (
+                is_valid_index(Board, RowIndex, ColumnIndex, PlayerColor),
+                nth0(NewRowIndex, Board, NewRowList),
+                nth0(NewColumnIndex, NewRowList, SelectedTower),
+                origin is Size - NumPieces,
+                remove_n_elements(NumPieces, Piece, ResultList), % Peça original
+                add_n_elements(NumPieces, PlayerColor, SelectedTower, ResultListt), % Peça de destino
+
+                (
+                    valid_moves(RowIndex, ColumnIndex, NewRowIndex, NewColumnIndex, NumPieces) ->
+                        replaceInMatrix(Board, RowIndex, ColumnIndex, ResultListt, TempBoard),
+                        replaceInMatrix(TempBoard, NewRowIndex, NewColumnIndex, ResultList, NewBoard),
+                        (
+                            winning_condition(PlayerColor, ResultListt) ->
+                                true  % Vitória alcançada, o jogo termina
+                            ;
+                                % Vitória não alcançada, continue o jogo
+                                write('Valid move. Continue playing.\n')
+                        )
+                    ;
+                        write('Invalid move for tower size. Please try again.'), nl,
+                        % Recursão para tentar novamente
+                        removeAndMovePieces(Board, NewBoard, PlayerColor)
+                )
+            ;
+                write('Invalid destination cell. Please try again.'), nl,
+                % Recursão para tentar novamente
+                removeAndMovePieces(Board, NewBoard, PlayerColor)
+            )
+        ;
+            % O jogador escolheu um número de peças inválido.
+            write('Invalid input. Please enter a number between 0 and '), write(Size), nl,
+            % Recursão para tentar novamente
+            removeAndMovePieces(Board, NewBoard, PlayerColor)
+        )
+    ;
+        % A célula escolhida não contém uma torre válida.
+        write('The chosen cell does not contain a valid tower. Please try again.'), nl,
+        % Recursão para tentar novamente
+        removeAndMovePieces(Board, NewBoard, PlayerColor)
+    ).
+
+
+% Condição de vitória
+winning_condition(PlayerColor, NewTower) :-
+    length(NewTower, Size),
+    (Size =:= 6 ->
+        nl,
+        write('+----------------------------------------------------------------------------+\n'),
+        write('|                                                                            |\n'),
+        write('|   Congratulations! Player '), write(PlayerColor), write(' wins the game!   |'), nl, nl,
+        write('|                                                                            |\n'),
+        write('+----------------------------------------------------------------------------+\n'),
+
+        delay_seconds(10),
+        halt  % Encerra o programa
+    ; true).
+
+
+% Função principal para o turno do jogador
+playerTurn(Board, NewBoard, PlayerColor, PlayerName) :-
+    write('\n------------------ '), write(PlayerColor), write(' -------------------\n\n'),
+    write('1. Do you want to move a tower or add a new disk? [0(Add Disk)/1(Move Tower)/2(Move Part of Tower)]\n'),
+    manageMoveWorkerBool(MoveWorkerBool),  % Obtém a escolha do jogador (mover torre ou adicionar peça).
+    (
+        MoveWorkerBool =:= 1 ->
+            moveTower(Board, NewBoard, PlayerColor)   % O jogador escolhe mover uma torre.
+        ; MoveWorkerBool =:= 0 ->
+            addNewDisk(Board, NewBoard, PlayerColor)  % O jogador escolhe adicionar uma nova peça.
+        ; MoveWorkerBool =:= 2 ->
+            removeAndMovePieces(Board, NewBoard, PlayerColor)
+    ),
+    printBoard(NewBoard).  % Imprime o tabuleiro após a jogada.
+
+
+% Loop principal do jogo.
 gameLoop(Board, Player1, Player2) :-
       blackPlayerTurn(Board, NewBoard, Player1),
       (
-            (checkGameState('black', NewBoard), write('\nThanks for playing!\n'));
             (whitePlayerTurn(NewBoard, FinalBoard, Player2),
                   (
-                        (checkGameState('white', FinalBoard), write('\nThanks for playing!\n'));
-                        (gameLoop(FinalBoard, Player1, Player2))
+                        (gameLoop(FinalBoard, Player1, Player2))  % Continua o loop do jogo.
                   )
             )
       ).
 
+
+% Função para iniciar o jogo.
 startGame(Player1, Player2) :-
-      initialBoard(InitialBoard),
-      addWorkers(InitialBoard, WorkersBoard, Player1, Player2),
-      gameLoop(WorkersBoard, Player1, Player2).
+      initialBoard(InitialBoard),  % Obtém um tabuleiro inicial.
+      addPieces(InitialBoard, PiecesBoard, Player1, Player2),  % Adiciona trabalhadores aos tabuleiros.
+      gameLoop(PiecesBoard, Player1, Player2).  % Inicia o loop do jogo.
+
+game_over(Board, PlayerColor) :-
+    checkGameStatus(Board, PlayerColor),
+    winning_condition(PlayerColor, NewTower)
+    nl,
+    write('Game Over.'),
+    halt.

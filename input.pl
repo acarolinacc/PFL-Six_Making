@@ -1,3 +1,6 @@
+/*Todos os predicados deste ficheiro analisam o input, relativamente às linhas e colunas inseridas pelo utilizador,
+e se as mesmas estão dentro dos limites do tabuleiro. Caso não se satisfaca, pede novamente a informação.*/
+
 manageRow(NewRow) :-
     readRow(Row),
     validateRow(Row, NewRow).
@@ -59,6 +62,9 @@ manageMoveWorkerBool(NewMoveWorkerBool):-
       read(MoveWorkerBool),
       validateMoveWorkerBool(MoveWorkerBool, NewMoveWorkerBool).
 
+validateMoveWorkerBool(2, NewMoveWorkerBool) :-
+    NewMoveWorkerBool = 2.
+
 validateMoveWorkerBool(1, NewMoveWorkerBool) :-
     NewMoveWorkerBool = 1.
 
@@ -66,6 +72,6 @@ validateMoveWorkerBool(0, NewMoveWorkerBool) :-
     NewMoveWorkerBool = 0.
 
 validateMoveWorkerBool(_Bool, NewMoveWorkerBool) :-
-    write('\nERROR: That answer is not valid, please try again![0(No)/1(Yes)]'),
+    write('\nERROR: That answer is not valid, please try again![0(Add Disk)/1(Move Tower)]'),
     read(Input),
     validateMoveWorkerBool(Input, NewMoveWorkerBool).

@@ -1,58 +1,35 @@
-% Replace an element in a list at a specified index.
-replaceInList([_|T], 0, Value, [Value|T]) :- !.
+% Predicado para substituir um elemento em uma lista (baseado em indexação 0).
+replaceInList([H|T], 0, Value, [Value|T]) :- !.  % Quando o índice é 0, substitua o elemento.
 replaceInList([H|T], Index, Value, [H|TNew]) :-
     Index > 0,
     Index1 is Index - 1,
-    replaceInList(T, Index1, Value, TNew).
+    replaceInList(T, Index1, Value, TNew).  % Recursivamente, continue procurando o índice para substituir.
 
-% Replace an element in a matrix at a specified row and column.
+% Predicado para substituir um elemento em uma matriz (baseado em indexação 0).
 replaceInMatrix([H|T], 0, Column, Value, [HNew|T]) :-
-    replaceInList(H, Column, Value, HNew).
+    replaceInList(H, Column, Value, HNew).  % Quando o índice da linha é 0, substitua na linha.
 replaceInMatrix([H|T], Row, Column, Value, [H|TNew]) :-
     Row > 0,
     Row1 is Row - 1,
-    replaceInMatrix(T, Row1, Column, Value, TNew).
+    replaceInMatrix(T, Row1, Column, Value, TNew).  % Recursivamente, continue procurando a linha e coluna para substituir.
 
-% Get the value from a list at a specified index.
-getValueFromList([H|_], 0, H).
-getValueFromList([_|T], Index, Value) :-
+% Predicado para obter um valor de uma lista (baseado em indexação 0).
+getValueFromList([H|_], 0, Value) :-
+    Value = H.  % Quando o índice é 0, obtenha o valor.
+getValueFromList([H|T], Index, Value) :-
     Index > 0,
     Index1 is Index - 1,
-    getValueFromList(T, Index1, Value).
+    getValueFromList(T, Index1, Value).  % Recursivamente, continue procurando o índice para obter o valor.
 
-% Get the value from a matrix at a specified row and column.
+% Predicado para obter um valor de uma matriz (baseado em indexação 0).
 getValueFromMatrix([H|_], 0, Column, Value) :-
-    getValueFromList(H, Column, Value).
-getValueFromMatrix([_|T], Row, Column, Value) :-
+    getValueFromList(H, Column, Value).  % Quando o índice da linha é 0, obtenha o valor na coluna.
+getValueFromMatrix([H|T], Row, Column, Value) :-
     Row > 0,
     Row1 is Row - 1,
-    getValueFromMatrix(T, Row1, Column, Value).
+    getValueFromMatrix(T, Row1, Column, Value).  % Recursivamente, continue procurando a linha e coluna para obter o valor.
 
-% Find the row and column positions of a specific value in the matrix.
-findPositionInColumn([], _, _, _, _).
-findPositionInColumn([Value|T], Value, Row, Column, Result) :-
-    Row = Result,
-    Column = 0.
-findPositionInColumn([_|T], Value, Row, Column, Result) :-
-    Column1 is Column + 1,
-    findPositionInColumn(T, Value, Row, Column1, Result).
-findPositionInRow([], _, _, _, _).
-findPositionInRow([Row|T], Value, RowIndex, Result, Column) :-
-    findPositionInColumn(Row, Value, RowIndex, 0, Column),
-    Result = RowIndex.
-findPositionInRow([_|T], Value, RowIndex, Result, Column) :-
-    RowIndex1 is RowIndex + 1,
-    findPositionInRow(T, Value, RowIndex1, Result, Column).
-
-% Get the positions of 'black' and 'white' workers in the board.
-getWorkersPos(Board, WorkerRowBlack, WorkerColumnBlack, WorkerRowWhite, WorkerColumnWhite) :-
-    getWorkersPosRow(Board, black, 0, WorkerRowBlack, WorkerColumnBlack),
-    getWorkersPosRow(Board, white, 0, WorkerRowWhite, WorkerColumnWhite).
-
-% Find the positions of 'black' or 'white' worker in a row.
-getWorkersPosRow(Board, Value, RowIndex, WorkerRow, WorkerColumn) :-
-    findPositionInRow(Board, Value, RowIndex, WorkerRow, WorkerColumn).
-
-% Check if the board is full.
+% Predicado para verificar se o tabuleiro está completamente preenchido.
 checkFullBoard(Board) :-
-    \+ (member(Row, Board), member('empty', Row)).
+    \+ (append(_, [R|_], Board),
+        append(_, ['empty'|_], R)).  % O tabuleiro está completo se não houver 'empty' em nenhuma linha.
